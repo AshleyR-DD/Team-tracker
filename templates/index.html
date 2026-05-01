@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Team Overview — Team Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Team Overview</h1>
+        <p class="subtitle">Ashley Rodriguez · Manager 2, Technical Support Engineering</p>
+    </div>
+    <div class="header-stats">
+        <div class="stat-pill">{{ overview|length }} Members</div>
+        <div class="stat-pill">{{ total_active }} Active Projects</div>
+    </div>
+</div>
+
+<div class="team-grid">
+    {% for item in overview %}
+    {% set t = item.teammate %}
+    {% set initials = t.name.split()|map('first')|join('') %}
+    <a href="{{ url_for('teammate', tid=t.id) }}" class="team-card">
+        <div class="card-top">
+            <div class="avatar">{{ initials }}</div>
+            <div class="card-info">
+                <h2>{{ t.name }}</h2>
+                <span class="role-badge">Technical Support Engineering</span>
+            </div>
+        </div>
+
+        <div class="card-stats">
+            <div class="stat">
+                <span class="stat-num">{{ item.active|length }}</span>
+                <span class="stat-label">Active</span>
+            </div>
+            <div class="stat">
+                <span class="stat-num">{{ item.done|length }}</span>
+                <span class="stat-label">Completed</span>
+            </div>
+            <div class="stat">
+                <span class="stat-num">{{ item.avg_pct }}%</span>
+                <span class="stat-label">Avg Progress</span>
+            </div>
+        </div>
+
+        {% if item.active %}
+        <div class="card-projects">
+            <p class="projects-label">Active Projects</p>
+            {% for p in item.active[:3] %}
+            <div class="mini-project">
+                <div class="mini-project-header">
+                    <span class="mini-name">{{ p.name }}</span>
+                    <span class="mini-pct">{{ p.pct_complete }}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ p.pct_complete }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+            {% if item.active|length > 3 %}
+            <p class="more-projects">+{{ item.active|length - 3 }} more</p>
+            {% endif %}
+        </div>
+        {% else %}
+        <p class="no-projects">No active projects</p>
+        {% endif %}
+
+        <div class="card-footer">View Profile &rarr;</div>
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}

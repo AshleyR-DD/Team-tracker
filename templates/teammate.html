@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}{{ teammate.name }} — Team Tracker{% endblock %}
+
+{% block content %}
+{% set initials = teammate.name.split()|map('first')|join('') %}
+{% set active = projects|selectattr('completed_date', 'none')|list %}
+{% set done = projects|rejectattr('completed_date', 'none')|list %}
+
+<div class="page-header">
+    <div class="header-left">
+        <a href="/" class="back-link">&larr; Back to Overview</a>
+        <div class="teammate-header">
+            <div class="avatar avatar-lg">{{ initials }}</div>
+            <div>
+                <h1>{{ teammate.name }}</h1>
+                <p class="subtitle">Technical Support Engineering</p>
+            </div>
+        </div>
+    </div>
+    <div class="header-stats">
+        <div class="stat-pill">{{ active|length }} Active</div>
+        <div class="stat-pill muted">{{ done|length }} Completed</div>
+    </div>
+</div>
+
+<!-- Add Project Form -->
+<div class="section-card">
+    <h2>Add New Project</h2>
+    <form action="{{ url_for('add_project', tid=teammate.id) }}" method="POST" class="add-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="name">Project Name</label>
+                <input type="text" id="name" name="name" placeholder="e.g. Q2 Onboarding Audit" required>
+            </div>
+            <div class="form-group">
+                <label for="start_date">Start Date</label>
+                <input type="date" id="start_date" name="start_date" value="{{ today }}" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Project</button>
+        </div>
+    </form>
+</div>
+
+<!-- Active Projects -->
+<div class="section-card">
+    <h2>Active Projects</h2>
+    {% if active %}
+    <table class="projects-table">
+        <thead>
+            <tr>
+                <th>Project</th>
+                <th>Started</th>
+                <th>Progress</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in active %}
+            <tr>
+                <td class="project-name">{{ p.name }}</td>
+                <td class="date-cell">{{ p.start_date }}</td>
+                <td class="progress-cell">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ p.pct_complete }}%"></div>
+                    </div>
+                    <span class="pct-label">{{ p.pct_complete }}%</span>
+                </td>
+                <td class="actions-cell">
+                    <form action="{{ url_for('update_project', pid=p.id) }}" method="POST" class="inline-form">
+                        <input type="number" name="pct_complete" value="{{ p.pct_complete }}"
+                               min="0" max="100" class="pct-input">
+                        <input type="date" name="completed_date" class="date-input" placeholder="Completion date">
+                        <button type="submit" class="btn btn-sm btn-secondary">Update</button>
+                    </form>
+                    <form action="{{ url_for('delete_project', pid=p.id) }}" method="POST"
+                          onsubmit="return confirm('Delete this project?')">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No active projects. Add one above.</p>
+    {% endif %}
+</div>
+
+<!-- Completed Projects -->
+{% if done %}
+<div class="section-card">
+    <h2>Completed Projects</h2>
+    <table class="projects-table">
+        <thead>
+            <tr>
+                <th>Project</th>
+                <th>Started</th>
+                <th>Completed</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in done %}
+            <tr class="completed-row">
+                <td class="project-name">
+                    <span class="checkmark">&#10003;</span> {{ p.name }}
+                </td>
+                <td class="date-cell">{{ p.start_date }}</td>
+                <td class="date-cell completed-date">{{ p.completed_date }}</td>
+                <td class="actions-cell">
+                    <form action="{{ url_for('delete_project', pid=p.id) }}" method="POST"
+                          onsubmit="return confirm('Delete this project?')">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}
