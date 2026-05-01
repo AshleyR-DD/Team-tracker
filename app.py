@@ -1,9 +1,16 @@
 from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
-from datetime import date
+from datetime import date, datetime
 
 app = Flask(__name__)
 DB = 'team_tracker.db'
+
+
+@app.template_filter('fmt_date')
+def fmt_date(s):
+    if not s:
+        return ''
+    return datetime.strptime(s, '%Y-%m-%d').strftime('%b %-d')
 
 
 def get_db():
@@ -27,6 +34,13 @@ def init_db():
                 pct_complete INTEGER DEFAULT 0,
                 completed_date TEXT,
                 FOREIGN KEY (teammate_id) REFERENCES teammates(id)
+            );
+            CREATE TABLE IF NOT EXISTS progress_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                project_id INTEGER NOT NULL,
+                pct_complete INTEGER NOT NULL,
+                updated_date TEXT NOT NULL,
+                FOREIGN KEY (project_id) REFERENCES projects(id)
             );
         ''')
         if conn.execute('SELECT COUNT(*) FROM teammates').fetchone()[0] == 0:
@@ -66,7 +80,13 @@ def teammate(tid):
         'SELECT * FROM projects WHERE teammate_id = ? ORDER BY completed_date ASC, start_date DESC',
         (tid,)
     ).fetchall()
-    return render_template('teammate.html', teammate=t, projects=projects, today=date.today().isoformat())
+    history = {}
+    for p in projects:
+        history[p['id']] = db.execute(
+            'SELECT pct_complete, updated_date FROM progress_history WHERE project_id = ? ORDER BY updated_date DESC',
+            (p['id'],)
+        ).fetchall()
+    return render_template('teammate.html', teammate=t, projects=projects, today=date.today().isoformat(), history=history)
 
 
 @app.route('/teammate/<int:tid>/add', methods=['POST'])
@@ -85,12 +105,18 @@ def add_project(tid):
 @app.route('/project/<int:pid>/update', methods=['POST'])
 def update_project(pid):
     pct = max(0, min(100, int(request.form.get('pct_complete', 0))))
-    completed_date = request.form.get('completed_date') or None
+    mark_complete = request.form.get('mark_complete')
+    completed_date = date.today().isoformat() if mark_complete else None
+    today = date.today().isoformat()
     with get_db() as db:
         project = db.execute('SELECT teammate_id FROM projects WHERE id = ?', (pid,)).fetchone()
         db.execute(
             'UPDATE projects SET pct_complete = ?, completed_date = ? WHERE id = ?',
             (pct, completed_date, pid)
+        )
+        db.execute(
+            'INSERT INTO progress_history (project_id, pct_complete, updated_date) VALUES (?, ?, ?)',
+            (pid, pct, today)
         )
     return redirect(url_for('teammate', tid=project['teammate_id']))
 

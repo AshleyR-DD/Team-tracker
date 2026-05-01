@@ -57,7 +57,14 @@
         <tbody>
             {% for p in active %}
             <tr>
-                <td class="project-name">{{ p.name }}</td>
+                <td class="project-name">
+                    {{ p.name }}
+                    {% if history[p.id] %}
+                    <button type="button" class="btn-history" onclick="toggleHistory('hist-{{ p.id }}')">
+                        {{ history[p.id]|length }} update{{ 's' if history[p.id]|length != 1 }}
+                    </button>
+                    {% endif %}
+                </td>
                 <td class="date-cell">{{ p.start_date }}</td>
                 <td class="progress-cell">
                     <div class="progress-bar">
@@ -66,16 +73,33 @@
                     <span class="pct-label">{{ p.pct_complete }}%</span>
                 </td>
                 <td class="actions-cell">
-                    <form action="{{ url_for('update_project', pid=p.id) }}" method="POST" class="inline-form">
-                        <input type="number" name="pct_complete" value="{{ p.pct_complete }}"
-                               min="0" max="100" class="pct-input">
-                        <input type="date" name="completed_date" class="date-input" placeholder="Completion date">
-                        <button type="submit" class="btn btn-sm btn-secondary">Update</button>
+                    <form action="{{ url_for('update_project', pid=p.id) }}" method="POST" class="update-form">
+                        <div class="slider-row">
+                            <input type="range" name="pct_complete" id="range-{{ p.id }}"
+                                   value="{{ p.pct_complete }}" min="0" max="100"
+                                   oninput="document.getElementById('pct-display-{{ p.id }}').textContent = this.value + '%'">
+                            <span id="pct-display-{{ p.id }}" class="pct-display">{{ p.pct_complete }}%</span>
+                        </div>
+                        <div class="form-actions">
+                            <label class="complete-label">
+                                <input type="checkbox" name="mark_complete"> Mark Complete
+                            </label>
+                            <button type="submit" class="btn btn-sm btn-secondary">Save</button>
+                        </div>
                     </form>
                     <form action="{{ url_for('delete_project', pid=p.id) }}" method="POST"
                           onsubmit="return confirm('Delete this project?')">
                         <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                     </form>
+                </td>
+            </tr>
+            <tr id="hist-{{ p.id }}" class="history-row" style="display:none">
+                <td colspan="4">
+                    <div class="history-list">
+                        {% for h in history[p.id] %}
+                        <span class="history-entry">{{ h.updated_date | fmt_date }} &middot; {{ h.pct_complete }}%</span>
+                        {% endfor %}
+                    </div>
                 </td>
             </tr>
             {% endfor %}
@@ -119,4 +143,11 @@
     </table>
 </div>
 {% endif %}
+
+<script>
+function toggleHistory(id) {
+    const row = document.getElementById(id);
+    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+</script>
 {% endblock %}
