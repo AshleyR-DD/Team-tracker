@@ -59,6 +59,7 @@
             <tr>
                 <td class="project-name">
                     {{ p.name }}
+                    {% if p.id in stale_ids %}<span class="badge-stale">⚠ STALE</span>{% endif %}
                     {% if history[p.id] %}
                     <button type="button" class="btn-history" onclick="toggleHistory('hist-{{ p.id }}')">
                         {{ history[p.id]|length }} update{{ 's' if history[p.id]|length != 1 }}
@@ -81,6 +82,7 @@
                             <span id="pct-display-{{ p.id }}" class="pct-display">{{ p.pct_complete }}%</span>
                         </div>
                         <div class="form-actions">
+                            <input type="date" name="update_date" value="{{ today }}" class="date-input" required>
                             <label class="complete-label">
                                 <input type="checkbox" name="mark_complete"> Mark Complete
                             </label>

@@ -503,6 +503,22 @@ body {
     border-radius: 999px;
 }
 
+.badge-stale {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin-left: 0.4rem;
+}
+
 .completed-row { opacity: 0.75; }
 
 .checkmark { color: var(--green); margin-right: 0.25rem; }

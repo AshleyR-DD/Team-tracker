@@ -86,7 +86,16 @@ def teammate(tid):
             'SELECT pct_complete, updated_date FROM progress_history WHERE project_id = ? ORDER BY updated_date DESC',
             (p['id'],)
         ).fetchall()
-    return render_template('teammate.html', teammate=t, projects=projects, today=date.today().isoformat(), history=history)
+    today_date = date.today()
+    stale_ids = set()
+    for p in projects:
+        if p['completed_date']:
+            continue
+        h = history[p['id']]
+        ref = h[0]['updated_date'] if h else p['start_date']
+        if (today_date - datetime.strptime(ref, '%Y-%m-%d').date()).days >= 30:
+            stale_ids.add(p['id'])
+    return render_template('teammate.html', teammate=t, projects=projects, today=today_date.isoformat(), history=history, stale_ids=stale_ids)
 
 
 @app.route('/teammate/<int:tid>/add', methods=['POST'])
@@ -106,8 +115,8 @@ def add_project(tid):
 def update_project(pid):
     pct = max(0, min(100, int(request.form.get('pct_complete', 0))))
     mark_complete = request.form.get('mark_complete')
-    completed_date = date.today().isoformat() if mark_complete else None
-    today = date.today().isoformat()
+    update_date = request.form.get('update_date') or date.today().isoformat()
+    completed_date = update_date if mark_complete else None
     with get_db() as db:
         project = db.execute('SELECT teammate_id FROM projects WHERE id = ?', (pid,)).fetchone()
         db.execute(
@@ -116,7 +125,7 @@ def update_project(pid):
         )
         db.execute(
             'INSERT INTO progress_history (project_id, pct_complete, updated_date) VALUES (?, ?, ?)',
-            (pid, pct, today)
+            (pid, pct, update_date)
         )
     return redirect(url_for('teammate', tid=project['teammate_id']))
 
